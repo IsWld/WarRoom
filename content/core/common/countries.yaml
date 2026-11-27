@@ -1,0 +1,31 @@
+# Countries known to the game. Starting positions per scenario live under history/.
+# Placeholder set for Phase 0: the seven major powers of 1936. Colors are original choices.
+countries:
+  - id: GER
+    name: Germany
+    adjective: German
+    color: [92, 98, 104]
+  - id: ENG
+    name: United Kingdom
+    adjective: British
+    color: [196, 56, 64]
+  - id: FRA
+    name: France
+    adjective: French
+    color: [58, 92, 178]
+  - id: SOV
+    name: Soviet Union
+    adjective: Soviet
+    color: [150, 28, 30]
+  - id: USA
+    name: United States
+    adjective: American
+    color: [40, 132, 168]
+  - id: ITA
+    name: Italy
+    adjective: Italian
+    color: [74, 148, 82]
+  - id: JAP
+    name: Japan
+    adjective: Japanese
+    color: [226, 214, 172]
