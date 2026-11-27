@@ -1,4 +1,5 @@
 import { addDivision, divisionIndex } from './divisions.ts';
+import { canBuild } from './economy.ts';
 import { findPath } from './pathfinding.ts';
 import { atWar, NO_COUNTRY, setWar, type GameState } from './state.ts';
 import type { World } from './world.ts';
@@ -21,7 +22,19 @@ export type Command =
   /** Debug / scenario setup: creates a full-strength division. */
   | { type: 'SpawnDivision'; country: string; template: string; province: number }
   /** Marks a country as human-controlled (true) or AI-controlled (false). */
-  | { type: 'SetHuman'; country: string; human: boolean };
+  | { type: 'SetHuman'; country: string; human: boolean }
+  | { type: 'QueueConstruction'; country: string; state: number; building: string }
+  | { type: 'CancelConstruction'; country: string; index: number }
+  /** Sets line `line` (or adds a line when `line` is -1) to make `equipment` with `factories`. */
+  | {
+      type: 'SetProductionLine';
+      country: string;
+      line: number;
+      equipment: string;
+      factories: number;
+    }
+  | { type: 'RemoveProductionLine'; country: string; line: number }
+  | { type: 'TrainDivision'; country: string; template: string; province: number };
 
 export type CommandType = Command['type'];
 
@@ -74,6 +87,56 @@ export function validateCommand(state: GameState, command: Command, world: World
     }
     case 'SetHuman':
       return country(command.country) <= NO_COUNTRY ? `Unknown country "${command.country}"` : null;
+    case 'QueueConstruction': {
+      const c = country(command.country);
+      if (c <= NO_COUNTRY) return `Unknown country "${command.country}"`;
+      return canBuild(state, world, c, command.state, world.buildingIds.indexOf(command.building));
+    }
+    case 'CancelConstruction':
+    case 'RemoveProductionLine': {
+      const c = country(command.country);
+      if (c <= NO_COUNTRY) return `Unknown country "${command.country}"`;
+      const list =
+        command.type === 'CancelConstruction'
+          ? state.economy[c]!.construction
+          : state.economy[c]!.lines;
+      const index = command.type === 'CancelConstruction' ? command.index : command.line;
+      return Number.isInteger(index) && index >= 0 && index < list.length ? null : 'No such entry';
+    }
+    case 'SetProductionLine': {
+      const c = country(command.country);
+      if (c <= NO_COUNTRY) return `Unknown country "${command.country}"`;
+      if (!world.equipmentIds.includes(command.equipment))
+        return `Unknown equipment "${command.equipment}"`;
+      if (
+        !Number.isInteger(command.factories) ||
+        command.factories < 0 ||
+        command.factories > 1000
+      ) {
+        return 'Factories must be a whole number from 0 to 1000';
+      }
+      const lines = state.economy[c]!.lines;
+      if (
+        command.line !== -1 &&
+        !(Number.isInteger(command.line) && command.line >= 0 && command.line < lines.length)
+      ) {
+        return 'No such production line';
+      }
+      return null;
+    }
+    case 'TrainDivision': {
+      const c = country(command.country);
+      if (c <= NO_COUNTRY) return `Unknown country "${command.country}"`;
+      if (!world.templateIds.includes(command.template))
+        return `Unknown template "${command.template}"`;
+      if (
+        !isProvince(state, command.province) ||
+        state.provinces.controller[command.province] !== c
+      ) {
+        return 'Divisions must train in a province you control';
+      }
+      return null;
+    }
     default:
       return `Unknown command type "${(command as { type: unknown }).type}"`;
   }
@@ -150,6 +213,47 @@ export function applyCommand(state: GameState, command: Command, world: World): 
     }
     case 'SetHuman':
       state.humans[country(command.country)] = command.human ? 1 : 0;
+      return;
+    case 'QueueConstruction':
+      state.economy[country(command.country)]!.construction.push({
+        state: command.state,
+        building: world.buildingIds.indexOf(command.building),
+        progress: 0,
+      });
+      return;
+    case 'CancelConstruction':
+      state.economy[country(command.country)]!.construction.splice(command.index, 1);
+      return;
+    case 'SetProductionLine': {
+      const lines = state.economy[country(command.country)]!.lines;
+      const equipment = world.equipmentIds.indexOf(command.equipment);
+      if (command.line === -1) {
+        lines.push({
+          equipment,
+          factories: command.factories,
+          efficiency: world.economy.efficiencyStart,
+          progress: 0,
+        });
+      } else {
+        const line = lines[command.line]!;
+        if (line.equipment !== equipment) {
+          line.equipment = equipment;
+          line.efficiency = world.economy.efficiencyStart;
+          line.progress = 0;
+        }
+        line.factories = command.factories;
+      }
+      return;
+    }
+    case 'RemoveProductionLine':
+      state.economy[country(command.country)]!.lines.splice(command.line, 1);
+      return;
+    case 'TrainDivision':
+      state.economy[country(command.country)]!.training.push({
+        template: world.templateIds.indexOf(command.template),
+        province: command.province,
+        daysLeft: -1,
+      });
       return;
   }
 }

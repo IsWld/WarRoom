@@ -1,7 +1,7 @@
 import { createDivisions, type DivisionArrays } from './divisions.ts';
 import { createRng, type RngState } from './rng.ts';
 
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 4;
 
 /** Country index 0 is reserved for "nobody" (unowned land, open sea). */
 export const NO_COUNTRY = 0;
@@ -31,6 +31,49 @@ export interface GameState {
   wars: Uint8Array;
   /** 1 for countries controlled by a human player; everyone else is run by the AI. */
   humans: Uint8Array;
+  /** Number of states and building types the `buildings` matrix is sized for. */
+  stateCount: number;
+  buildingCount: number;
+  /** Building levels per state × building type. */
+  buildings: Uint8Array;
+  /** Per country index. */
+  economy: CountryEconomy[];
+}
+
+export interface ProductionLine {
+  equipment: number;
+  factories: number;
+  /** Fixed-point 0–1. */
+  efficiency: number;
+  /** Fixed-point production points toward the next unit. */
+  progress: number;
+}
+
+export interface ConstructionProject {
+  state: number;
+  building: number;
+  /** Fixed-point construction points. */
+  progress: number;
+}
+
+export interface TrainingDivision {
+  template: number;
+  province: number;
+  /** -1 while waiting for equipment and manpower; otherwise days until it deploys. */
+  daysLeft: number;
+}
+
+export interface CountryEconomy {
+  manpower: number;
+  /** Equipment counts by equipment index. */
+  stockpile: number[];
+  lines: ProductionLine[];
+  construction: ConstructionProject[];
+  training: TrainingDivision[];
+}
+
+export function emptyEconomy(): CountryEconomy {
+  return { manpower: 0, stockpile: [], lines: [], construction: [], training: [] };
 }
 
 export interface CreateStateOptions {
@@ -41,6 +84,8 @@ export interface CreateStateOptions {
   provinceCount: number;
   /** Optional starting owner per province, as country tags (missing = nobody). */
   owners?: readonly (string | undefined)[];
+  stateCount?: number;
+  buildingCount?: number;
 }
 
 export function createState(options: CreateStateOptions): GameState {
@@ -71,6 +116,10 @@ export function createState(options: CreateStateOptions): GameState {
     divisions: createDivisions(),
     wars: new Uint8Array(countryTags.length * countryTags.length),
     humans: new Uint8Array(countryTags.length),
+    stateCount: options.stateCount ?? 0,
+    buildingCount: options.buildingCount ?? 0,
+    buildings: new Uint8Array((options.stateCount ?? 0) * (options.buildingCount ?? 0)),
+    economy: countryTags.map(() => emptyEconomy()),
   };
 }
 

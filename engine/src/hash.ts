@@ -25,6 +25,19 @@ export function hashState(state: GameState): string {
   for (let i = 0; i < d.count; i++) h.array(d.paths[i]!);
   h.array(state.wars);
   h.array(state.humans);
+  h.int(state.stateCount);
+  h.int(state.buildingCount);
+  h.array(state.buildings);
+  for (const e of state.economy) {
+    h.int(e.manpower);
+    h.array(e.stockpile);
+    h.int(e.lines.length);
+    for (const l of e.lines) h.array([l.equipment, l.factories, l.efficiency, l.progress]);
+    h.int(e.construction.length);
+    for (const c of e.construction) h.array([c.state, c.building, c.progress]);
+    h.int(e.training.length);
+    for (const t of e.training) h.array([t.template, t.province, t.daysLeft]);
+  }
   return h.hex();
 }
 

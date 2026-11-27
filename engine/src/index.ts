@@ -16,3 +16,4 @@ export * from './divisions.ts';
 export * from './pathfinding.ts';
 export * from './warfare.ts';
 export * from './ai.ts';
+export * from './economy.ts';

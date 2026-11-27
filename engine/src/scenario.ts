@@ -38,20 +38,56 @@ export function createGameFromContent(
     controllers[i] = entry.controller ?? entry.owner;
   }
 
+  const world = options.world;
   const state = createState({
     seed: options.seed,
     startDay: parseDay(setup.start_date),
     countryTags: countries.map((c) => c.id),
     provinceCount: map.provinceCount,
     owners,
+    stateCount: world?.stateCount ?? 0,
+    buildingCount: world?.buildingIds.length ?? 0,
   });
   for (let i = 0; i < map.provinceCount; i++) {
     const tag = controllers[i];
     if (tag !== undefined) state.provinces.controller[i] = state.countryTags.indexOf(tag);
   }
 
+  if (world) {
+    // Starting buildings.
+    world.stateIds.forEach((stateId, si) => {
+      for (const [buildingId, level] of Object.entries(setup.states[stateId]?.buildings ?? {})) {
+        const b = world.buildingIds.indexOf(buildingId);
+        if (b < 0)
+          throw new Error(`Setup "${setup.id}": unknown building "${buildingId}" in ${stateId}`);
+        state.buildings[si * state.buildingCount + b] = Math.min(level, world.buildingMax[b]!);
+      }
+    });
+    // Starting economies.
+    for (const [tag, eco] of Object.entries(setup.countries ?? {})) {
+      const c = state.countryTags.indexOf(tag);
+      if (c < 0) throw new Error(`Setup "${setup.id}": unknown country "${tag}"`);
+      const target = state.economy[c]!;
+      target.manpower = eco.manpower;
+      for (const [equipmentId, amount] of Object.entries(eco.stockpile)) {
+        const q = world.equipmentIds.indexOf(equipmentId);
+        if (q < 0) throw new Error(`Setup "${setup.id}": unknown equipment "${equipmentId}"`);
+        target.stockpile[q] = amount;
+      }
+      for (const line of eco.production) {
+        const q = world.equipmentIds.indexOf(line.equipment);
+        if (q < 0) throw new Error(`Setup "${setup.id}": unknown equipment "${line.equipment}"`);
+        target.lines.push({
+          equipment: q,
+          factories: line.factories,
+          efficiency: world.economy.efficiencyCap,
+          progress: 0,
+        });
+      }
+    }
+  }
+
   // Starting armies.
-  const world = options.world;
   if (world) {
     for (const div of setup.divisions ?? []) {
       const province = world.indexById.get(div.province);

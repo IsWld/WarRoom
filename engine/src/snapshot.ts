@@ -1,5 +1,5 @@
 import { createDivisions } from './divisions.ts';
-import { STATE_VERSION, type GameState } from './state.ts';
+import { STATE_VERSION, type CountryEconomy, type GameState } from './state.ts';
 
 /**
  * A JSON-safe copy of the game state: the basis of save files. Typed arrays become plain
@@ -27,6 +27,10 @@ export interface Snapshot {
   wars: [number, number][];
   /** Country indices controlled by humans. */
   humans: number[];
+  stateCount: number;
+  buildingCount: number;
+  buildings: number[];
+  economy: CountryEconomy[];
 }
 
 export function toSnapshot(state: GameState): Snapshot {
@@ -64,6 +68,10 @@ export function toSnapshot(state: GameState): Snapshot {
       return pairs;
     })(),
     humans: Array.from(state.humans.keys()).filter((i) => state.humans[i] === 1),
+    stateCount: state.stateCount,
+    buildingCount: state.buildingCount,
+    buildings: Array.from(state.buildings),
+    economy: cloneEconomy(state.economy),
   };
 }
 
@@ -126,10 +134,29 @@ export function fromSnapshot(snapshot: Snapshot): GameState {
       for (const i of snapshot.humans) humans[i] = 1;
       return humans;
     })(),
+    stateCount: snapshot.stateCount,
+    buildingCount: snapshot.buildingCount,
+    buildings: (() => {
+      if (snapshot.buildings.length !== snapshot.stateCount * snapshot.buildingCount) {
+        throw new Error('Corrupt save: building table size mismatch');
+      }
+      return Uint8Array.from(snapshot.buildings);
+    })(),
+    economy: cloneEconomy(snapshot.economy),
   };
 }
 
 /** Deep copy via a snapshot round trip. */
 export function cloneState(state: GameState): GameState {
   return fromSnapshot(toSnapshot(state));
+}
+
+function cloneEconomy(economy: readonly CountryEconomy[]): CountryEconomy[] {
+  return economy.map((e) => ({
+    manpower: e.manpower,
+    stockpile: [...e.stockpile],
+    lines: e.lines.map((l) => ({ ...l })),
+    construction: e.construction.map((c) => ({ ...c })),
+    training: e.training.map((t) => ({ ...t })),
+  }));
 }

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCsv } from '../src/content/csv.ts';
 import { checkReferences } from '../src/content/references.ts';
-import type { ProvinceDef, StateDef, TerrainDef } from '../src/content/schemas.ts';
+import type { ProvinceDef, TerrainDef } from '../src/content/schemas.ts';
 import { CORE_SCHEMAS } from '../src/content/schemas.ts';
 import type { LoadedContent } from '../src/content/types.ts';
 import { buildMapModel, countRegions, neighbors, provinceAt } from '../src/map/model.ts';
@@ -63,7 +63,7 @@ const provinces: ProvinceDef[] = [
   { id: '20', color: COLORS.B!, kind: 'land', terrain: 'plains', state: 'north' },
   { id: '25', color: COLORS.C!, kind: 'land', terrain: 'plains', state: 'south' },
 ];
-const states: StateDef[] = [
+const states: { id: string; name: string; provinces: number[] }[] = [
   { id: 'north', name: 'North', provinces: [10, 20] },
   { id: 'south', name: 'South', provinces: [25] },
 ];
@@ -145,7 +145,7 @@ test('countRegions detects a split province', () => {
     height: 2,
     pixels: pixelsFor(layout),
     provinces: provinces.filter((p) => p.id === '10' || p.id === '20'),
-    states: [{ id: 'north', name: 'N', provinces: [10, 20] }],
+    states: [{ id: 'north' }],
     terrain,
   });
   assert.ok(model);

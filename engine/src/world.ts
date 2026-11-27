@@ -4,7 +4,16 @@
  * rebuilt from the same content on load). All values that affect simulation are integers or
  * fixed-point.
  */
-import type { BattalionDef, MapDefines, TemplateDef, TerrainDef } from './content/schemas.ts';
+import type {
+  BattalionDef,
+  BuildingDef,
+  EquipmentDef,
+  MapDefines,
+  ResourceDef,
+  StateDef,
+  TemplateDef,
+  TerrainDef,
+} from './content/schemas.ts';
 import type { LoadedContent } from './content/types.ts';
 import { toFixed, type Fixed } from './fixed.ts';
 import { KIND_LAND, type MapModel } from './map/model.ts';
@@ -35,6 +44,40 @@ export interface CombatDefines {
   organizationRecovery: Fixed;
 }
 
+export interface EconomyDefines {
+  consumerGoods: Fixed;
+  resourcesPerTradeFactory: Fixed;
+  constructionPerFactory: Fixed;
+  maxFactoriesPerProject: number;
+  outputPerFactory: Fixed;
+  efficiencyStart: Fixed;
+  efficiencyGrowth: Fixed;
+  efficiencyCap: Fixed;
+  recruitableShare: Fixed;
+  trainingDays: number;
+  reinforceRate: Fixed;
+  supplyBase: Fixed;
+  supplyPerInfrastructure: Fixed;
+  supplyAttrition: Fixed;
+}
+
+export const DEFAULT_ECONOMY: EconomyDefines = {
+  consumerGoods: toFixed(0.3),
+  resourcesPerTradeFactory: toFixed(8),
+  constructionPerFactory: toFixed(5),
+  maxFactoriesPerProject: 15,
+  outputPerFactory: toFixed(4.5),
+  efficiencyStart: toFixed(0.1),
+  efficiencyGrowth: toFixed(0.01),
+  efficiencyCap: toFixed(1),
+  recruitableShare: toFixed(0.025),
+  trainingDays: 90,
+  reinforceRate: toFixed(0.1),
+  supplyBase: toFixed(2),
+  supplyPerInfrastructure: toFixed(1),
+  supplyAttrition: toFixed(0.002),
+};
+
 export interface World {
   provinceCount: number;
   provinceIds: Int32Array;
@@ -50,7 +93,36 @@ export interface World {
   templateIds: string[];
   templates: DivisionStats[];
   templateNames: string[];
+  /** Per template × equipment: equipment needed at full strength. */
+  templateEquipment: Int32Array;
   combat: CombatDefines;
+
+  // Economy
+  stateCount: number;
+  stateIds: string[];
+  /** Province → state index, or -1 for water. */
+  provinceState: Int32Array;
+  stateProvinceStart: Uint32Array;
+  stateProvinceList: Uint16Array;
+  stateSlots: Uint8Array;
+  /** Raw population available for recruitment base. */
+  stateManpower: Int32Array;
+  resourceIds: string[];
+  /** Per state × resource: resources produced per day (fixed-point). */
+  stateResources: Int32Array;
+  buildingIds: string[];
+  buildingCost: Int32Array;
+  buildingMax: Uint8Array;
+  buildingShared: Uint8Array;
+  /** Index of special buildings, or -1 if the content lacks them. */
+  civilianFactory: number;
+  militaryFactory: number;
+  infrastructure: number;
+  equipmentIds: string[];
+  equipmentCost: Int32Array;
+  /** Per equipment × resource: needed per factory per day (fixed-point). */
+  equipmentResources: Int32Array;
+  economy: EconomyDefines;
 }
 
 export const DEFAULT_COMBAT: CombatDefines = {
@@ -77,13 +149,37 @@ export const EMPTY_WORLD: World = {
   templateIds: [],
   templates: [],
   templateNames: [],
+  templateEquipment: new Int32Array(0),
   combat: DEFAULT_COMBAT,
+  stateCount: 0,
+  stateIds: [],
+  provinceState: new Int32Array(0),
+  stateProvinceStart: new Uint32Array(1),
+  stateProvinceList: new Uint16Array(0),
+  stateSlots: new Uint8Array(0),
+  stateManpower: new Int32Array(0),
+  resourceIds: [],
+  stateResources: new Int32Array(0),
+  buildingIds: [],
+  buildingCost: new Int32Array(0),
+  buildingMax: new Uint8Array(0),
+  buildingShared: new Uint8Array(0),
+  civilianFactory: -1,
+  militaryFactory: -1,
+  infrastructure: -1,
+  equipmentIds: [],
+  equipmentCost: new Int32Array(0),
+  equipmentResources: new Int32Array(0),
+  economy: DEFAULT_ECONOMY,
 };
 
 /** Derives division stats from its battalions (see docs/design/land-warfare.md). */
 export function divisionStats(
   battalions: Record<string, number>,
-  types: ReadonlyMap<string, Pick<BattalionDef, Exclude<keyof BattalionDef, 'id' | 'name'>>>,
+  types: ReadonlyMap<
+    string,
+    Pick<BattalionDef, Exclude<keyof BattalionDef, 'id' | 'name' | 'equipment'>>
+  >,
 ): DivisionStats {
   let count = 0;
   let soft = 0;
@@ -137,7 +233,12 @@ export function distanceKm(lon1: number, lat1: number, lon2: number, lat2: numbe
 }
 
 export function buildWorld(content: LoadedContent, map: MapModel): World {
-  const defines = content.defines as { map?: MapDefines; combat?: Record<string, number> };
+  const defines = content.defines as {
+    map?: MapDefines;
+    combat?: Record<string, number>;
+    economy?: Record<string, number>;
+    supply?: Record<string, number>;
+  };
   const terrain = (content.collections.terrain ?? []) as TerrainDef[];
   const battalions = (content.collections.battalions ?? []) as BattalionDef[];
   const templates = (content.collections.templates ?? []) as TemplateDef[];
@@ -173,6 +274,50 @@ export function buildWorld(content: LoadedContent, map: MapModel): World {
   const c = defines.combat ?? {};
   const fx = (key: string, fallback: Fixed) =>
     typeof c[key] === 'number' ? toFixed(c[key]) : fallback;
+  const e = defines.economy ?? {};
+  const sup = defines.supply ?? {};
+  const efx = (src: Record<string, number>, key: string, fallback: Fixed) =>
+    typeof src[key] === 'number' ? toFixed(src[key]) : fallback;
+  const eint = (key: string, fallback: number) =>
+    typeof e[key] === 'number' ? Math.round(e[key]) : fallback;
+
+  // Economy data.
+  const stateDefs = (content.collections.states ?? []) as StateDef[];
+  const stateById = new Map(stateDefs.map((sd) => [sd.id, sd]));
+  const resources = (content.collections.resources ?? []) as ResourceDef[];
+  const buildings = (content.collections.buildings ?? []) as BuildingDef[];
+  const equipment = (content.collections.equipment ?? []) as EquipmentDef[];
+  const resourceIds = resources.map((r) => r.id);
+  const stateCount = map.stateIds.length;
+  const stateSlots = new Uint8Array(stateCount);
+  const stateManpower = new Int32Array(stateCount);
+  const stateResources = new Int32Array(stateCount * resourceIds.length);
+  map.stateIds.forEach((id, si) => {
+    const sd = stateById.get(id);
+    if (!sd) return;
+    stateSlots[si] = Math.min(255, sd.building_slots ?? 0);
+    stateManpower[si] = sd.manpower ?? 0;
+    resourceIds.forEach((r, ri) => {
+      stateResources[si * resourceIds.length + ri] = toFixed(sd.resources?.[r] ?? 0);
+    });
+  });
+  const equipmentIds = equipment.map((q) => q.id);
+  const equipmentResources = new Int32Array(equipmentIds.length * resourceIds.length);
+  equipment.forEach((q, qi) =>
+    resourceIds.forEach((r, ri) => {
+      equipmentResources[qi * resourceIds.length + ri] = toFixed(q.resources[r] ?? 0);
+    }),
+  );
+  const templateEquipment = new Int32Array(templates.length * equipmentIds.length);
+  templates.forEach((t, ti) => {
+    for (const [bid, n] of Object.entries(t.battalions)) {
+      const b = types.get(bid);
+      for (const [eqId, amount] of Object.entries(b?.equipment ?? {})) {
+        const qi = equipmentIds.indexOf(eqId);
+        if (qi >= 0) templateEquipment[ti * equipmentIds.length + qi]! += amount * n;
+      }
+    }
+  });
 
   return {
     provinceCount: n,
@@ -198,6 +343,57 @@ export function buildWorld(content: LoadedContent, map: MapModel): World {
       ),
       randomSpread: fx('random_spread', DEFAULT_COMBAT.randomSpread),
       organizationRecovery: fx('organization_recovery', DEFAULT_COMBAT.organizationRecovery),
+    },
+    templateEquipment,
+    stateCount,
+    stateIds: map.stateIds,
+    provinceState: map.state,
+    stateProvinceStart: map.stateProvinceStart,
+    stateProvinceList: map.stateProvinceList,
+    stateSlots,
+    stateManpower,
+    resourceIds,
+    stateResources,
+    buildingIds: buildings.map((b) => b.id),
+    buildingCost: Int32Array.from(buildings, (b) => toFixed(b.cost)),
+    buildingMax: Uint8Array.from(buildings, (b) => Math.min(255, b.max_level)),
+    buildingShared: Uint8Array.from(buildings, (b) => (b.shared_slots ? 1 : 0)),
+    civilianFactory: buildings.findIndex((b) => b.id === 'civilian_factory'),
+    militaryFactory: buildings.findIndex((b) => b.id === 'military_factory'),
+    infrastructure: buildings.findIndex((b) => b.id === 'infrastructure'),
+    equipmentIds,
+    equipmentCost: Int32Array.from(equipment, (q) => toFixed(q.cost)),
+    equipmentResources,
+    economy: {
+      consumerGoods: efx(e, 'consumer_goods', DEFAULT_ECONOMY.consumerGoods),
+      resourcesPerTradeFactory: efx(
+        e,
+        'resources_per_trade_factory',
+        DEFAULT_ECONOMY.resourcesPerTradeFactory,
+      ),
+      constructionPerFactory: efx(
+        e,
+        'construction_per_factory',
+        DEFAULT_ECONOMY.constructionPerFactory,
+      ),
+      maxFactoriesPerProject: eint(
+        'max_factories_per_project',
+        DEFAULT_ECONOMY.maxFactoriesPerProject,
+      ),
+      outputPerFactory: efx(e, 'output_per_factory', DEFAULT_ECONOMY.outputPerFactory),
+      efficiencyStart: efx(e, 'efficiency_start', DEFAULT_ECONOMY.efficiencyStart),
+      efficiencyGrowth: efx(e, 'efficiency_growth', DEFAULT_ECONOMY.efficiencyGrowth),
+      efficiencyCap: efx(e, 'efficiency_cap', DEFAULT_ECONOMY.efficiencyCap),
+      recruitableShare: efx(e, 'recruitable_share', DEFAULT_ECONOMY.recruitableShare),
+      trainingDays: eint('training_days', DEFAULT_ECONOMY.trainingDays),
+      reinforceRate: efx(e, 'reinforce_rate', DEFAULT_ECONOMY.reinforceRate),
+      supplyBase: efx(sup, 'base', DEFAULT_ECONOMY.supplyBase),
+      supplyPerInfrastructure: efx(
+        sup,
+        'per_infrastructure',
+        DEFAULT_ECONOMY.supplyPerInfrastructure,
+      ),
+      supplyAttrition: efx(sup, 'attrition', DEFAULT_ECONOMY.supplyAttrition),
     },
   };
 }

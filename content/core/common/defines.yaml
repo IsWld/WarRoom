@@ -19,3 +19,22 @@ defines:
     organization_damage_per_hit: 0.1
     random_spread: 0.1 # damage varies ±10% per hour
     organization_recovery: 0.4 # per hour when idle
+
+  # Economy. See docs/design/economy.md.
+  economy:
+    consumer_goods: 0.3 # share of civilian factories making consumer goods
+    resources_per_trade_factory: 8 # resources imported per civilian factory per day
+    construction_per_factory: 5 # construction points per civilian factory per day
+    max_factories_per_project: 15
+    output_per_factory: 4.5 # production points per military factory per day at full efficiency
+    efficiency_start: 0.1
+    efficiency_growth: 0.01 # per day
+    efficiency_cap: 1.0
+    recruitable_share: 0.025 # share of state population that becomes recruitable per year
+    training_days: 90
+    reinforce_rate: 0.1 # share of missing strength restored per day, if equipment and men allow
+
+  supply:
+    base: 2 # divisions a state supports with no infrastructure
+    per_infrastructure: 1 # extra divisions per infrastructure level
+    attrition: 0.002 # strength lost per hour at 100% over capacity

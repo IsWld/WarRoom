@@ -1,0 +1,39 @@
+# Strategic resources, buildings and equipment. See docs/design/economy.md.
+resources:
+  - { id: oil, name: Oil }
+  - { id: steel, name: Steel }
+  - { id: aluminium, name: Aluminium }
+  - { id: rubber, name: Rubber }
+  - { id: tungsten, name: Tungsten }
+  - { id: chromium, name: Chromium }
+
+buildings:
+  - { id: civilian_factory, name: Civilian Factory, cost: 10800, max_level: 20, shared_slots: true }
+  - { id: military_factory, name: Military Factory, cost: 7200, max_level: 20, shared_slots: true }
+  - { id: dockyard, name: Naval Dockyard, cost: 6400, max_level: 20, shared_slots: true }
+  - { id: infrastructure, name: Infrastructure, cost: 3000, max_level: 10, shared_slots: false }
+  - { id: fort, name: Land Fort, cost: 500, max_level: 10, shared_slots: false }
+  - { id: refinery, name: Synthetic Refinery, cost: 6000, max_level: 3, shared_slots: false }
+
+# cost: production points per unit. resources: needed per assigned factory per day.
+equipment:
+  - id: infantry_equipment
+    name: Infantry Equipment
+    cost: 0.5
+    resources: { steel: 2 }
+  - id: support_equipment
+    name: Support Equipment
+    cost: 4
+    resources: { steel: 1, aluminium: 1 }
+  - id: artillery_equipment
+    name: Artillery
+    cost: 3.5
+    resources: { steel: 2, tungsten: 1 }
+  - id: motorized_equipment
+    name: Trucks
+    cost: 2.5
+    resources: { steel: 1, rubber: 1 }
+  - id: light_tank_equipment
+    name: Light Tanks
+    cost: 8
+    resources: { steel: 2, chromium: 1 }

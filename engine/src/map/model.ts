@@ -54,8 +54,8 @@ export interface BuildMapInput {
   /** RGBA bytes, length width × height × 4. Alpha is ignored. */
   pixels: Uint8Array | Uint8ClampedArray;
   provinces: readonly ProvinceDef[];
-  states: readonly StateDef[];
-  terrain: readonly TerrainDef[];
+  states: readonly Pick<StateDef, 'id'>[];
+  terrain: readonly Pick<TerrainDef, 'id'>[];
 }
 
 export const MAX_PROVINCES = 0xffff;

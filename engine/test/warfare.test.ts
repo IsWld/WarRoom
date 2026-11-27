@@ -9,7 +9,7 @@ import { GameSession } from '../src/session.ts';
 import { fromSnapshot, toSnapshot } from '../src/snapshot.ts';
 import { atWar, createState } from '../src/state.ts';
 import { WARFARE_SYSTEMS } from '../src/warfare.ts';
-import { DEFAULT_COMBAT, divisionStats, type World } from '../src/world.ts';
+import { DEFAULT_COMBAT, divisionStats, EMPTY_WORLD, type World } from '../src/world.ts';
 import { SYSTEMS } from '../src/sim.ts';
 
 const BATTALIONS = new Map(
@@ -84,6 +84,7 @@ function makeWorld(): World {
   moveCost[3] = toFixed(2);
   attackModifier[3] = toFixed(0.5);
   return {
+    ...EMPTY_WORLD,
     provinceCount: n,
     provinceIds: Int32Array.from({ length: n }, (_, i) => i + 100),
     indexById: new Map(Array.from({ length: n }, (_, i) => [i + 100, i])),

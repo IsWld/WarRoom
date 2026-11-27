@@ -62,6 +62,10 @@ export const stateSchema = z
     name: z.string().min(1),
     provinces: z.array(z.number().int().positive()).min(1),
     manpower: z.number().int().nonnegative().optional(),
+    /** Slots shared by civilian factories, military factories and dockyards. */
+    building_slots: z.number().int().nonnegative().default(0),
+    /** Resources produced per day, e.g. { steel: 12, oil: 4 }. */
+    resources: z.record(slug, z.number().nonnegative()).default({}),
     /** Province id → victory points. */
     victory_points: z
       .record(z.string().regex(/^[1-9][0-9]*$/), z.number().int().positive())
@@ -98,6 +102,33 @@ export const battalionSchema = z
     width: z.number().positive(),
     hardness: z.number().min(0).max(1),
     manpower: z.number().int().nonnegative(),
+    /** Equipment needed at full strength, e.g. { infantry_equipment: 100 }. */
+    equipment: z.record(slug, z.number().int().nonnegative()).default({}),
+  })
+  .strict();
+
+export const resourceSchema = z.object({ id: slug, name: z.string().min(1) }).strict();
+
+export const buildingSchema = z
+  .object({
+    id: slug,
+    name: z.string().min(1),
+    /** Construction points to build one level. */
+    cost: z.number().positive(),
+    max_level: z.number().int().positive(),
+    /** Factories and dockyards share a state's building slots. */
+    shared_slots: z.boolean(),
+  })
+  .strict();
+
+export const equipmentSchema = z
+  .object({
+    id: slug,
+    name: z.string().min(1),
+    /** Production points per unit. */
+    cost: z.number().positive(),
+    /** Resources needed per assigned factory per day. */
+    resources: z.record(slug, z.number().nonnegative()).default({}),
   })
   .strict();
 
@@ -124,6 +155,18 @@ export const setupStateSchema = z
     owner: tag,
     controller: tag.optional(),
     cores: z.array(tag).default([]),
+    /** Buildings at the start, e.g. { civilian_factory: 3, infrastructure: 5 }. */
+    buildings: z.record(slug, z.number().int().nonnegative()).default({}),
+  })
+  .strict();
+
+export const setupCountrySchema = z
+  .object({
+    manpower: z.number().int().nonnegative().default(0),
+    stockpile: z.record(slug, z.number().int().nonnegative()).default({}),
+    production: z
+      .array(z.object({ equipment: slug, factories: z.number().int().positive() }).strict())
+      .default([]),
   })
   .strict();
 
@@ -135,6 +178,8 @@ export const setupSchema = z
     start_date: isoDay,
     states: z.record(slug, setupStateSchema),
     divisions: z.array(setupDivisionSchema).default([]),
+    /** Per-country starting economy. */
+    countries: z.record(tag, setupCountrySchema).default({}),
   })
   .strict();
 
@@ -166,6 +211,30 @@ export const combatDefinesSchema = z
   })
   .strict();
 
+export const economyDefinesSchema = z
+  .object({
+    consumer_goods: ratio,
+    resources_per_trade_factory: z.number().positive(),
+    construction_per_factory: z.number().positive(),
+    max_factories_per_project: z.number().int().positive(),
+    output_per_factory: z.number().positive(),
+    efficiency_start: ratio,
+    efficiency_growth: ratio,
+    efficiency_cap: ratio,
+    recruitable_share: ratio,
+    training_days: z.number().int().positive(),
+    reinforce_rate: ratio,
+  })
+  .strict();
+
+export const supplyDefinesSchema = z
+  .object({
+    base: z.number().nonnegative(),
+    per_infrastructure: z.number().nonnegative(),
+    attrition: ratio,
+  })
+  .strict();
+
 export const definesSchema = z
   .object({
     game: z
@@ -181,6 +250,8 @@ export const definesSchema = z
     /** Map image and projection. Optional until a mod provides a map. */
     map: mapDefinesSchema.optional(),
     combat: combatDefinesSchema.optional(),
+    economy: economyDefinesSchema.optional(),
+    supply: supplyDefinesSchema.optional(),
   })
   .passthrough();
 
@@ -192,6 +263,9 @@ export type SetupDef = z.output<typeof setupSchema>;
 export type MapDefines = z.infer<typeof mapDefinesSchema>;
 export type BattalionDef = z.infer<typeof battalionSchema>;
 export type TemplateDef = z.infer<typeof templateSchema>;
+export type BuildingDef = z.infer<typeof buildingSchema>;
+export type EquipmentDef = z.output<typeof equipmentSchema>;
+export type ResourceDef = z.infer<typeof resourceSchema>;
 export type Defines = z.infer<typeof definesSchema>;
 
 /** Wraps a Zod schema in the loader's dependency-free Validator interface. */
@@ -218,6 +292,9 @@ export const CORE_SCHEMAS: ContentSchemas = {
     setups: zodValidator(setupSchema),
     battalions: zodValidator(battalionSchema),
     templates: zodValidator(templateSchema),
+    resources: zodValidator(resourceSchema),
+    buildings: zodValidator(buildingSchema),
+    equipment: zodValidator(equipmentSchema),
   },
   defines: zodValidator(definesSchema),
 };
