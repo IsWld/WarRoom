@@ -119,6 +119,8 @@ export const definesSchema = z
         start_date: isoDay,
         /** Seed used when the player does not choose one. */
         default_seed: z.number().int(),
+        /** Game hours simulated per real second at speeds 1–5. */
+        speeds: z.array(z.number().positive()).length(5).default([2, 6, 24, 72, 240]),
       })
       .passthrough(),
     /** Map image and projection. Optional until a mod provides a map. */

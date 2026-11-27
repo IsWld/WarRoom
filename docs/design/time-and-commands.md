@@ -1,6 +1,6 @@
 # Time and commands
 
-**Status:** draft (Phase 0 implements the core; Phase 2 adds speeds, the worker and saving).
+**Status:** implemented in the engine (Phase 0–2); client UI for speeds, saves and the console is wired up with the map UI.
 
 ## Goal
 
@@ -30,3 +30,22 @@ future multiplayer all work from the same mechanism.
 
 - Unit tests for each command's validation and effect.
 - Determinism tests: identical runs match; save/reload mid-run matches; golden hash is stable.
+
+## Phase 2 additions
+
+| Piece                  | Where                             | Notes                                                                                                                                                                   |
+| ---------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scenario start         | `engine/src/scenario.ts`          | `createGameFromContent(content, map, {setupId, seed})` sets owners and controllers from a `setups` record.                                                              |
+| `Annex` command        | `engine/src/commands.ts`          | Debug: one country takes everything another owns and controls.                                                                                                          |
+| Immediate commands     | `GameSession.execute`             | Commands apply at the current tick, even while paused, and are logged with that tick. Equivalent to the next `step()` because `step()` applies commands before systems. |
+| Command log and replay | `engine/src/replay.ts`            | `replay(initialState, log, untilTick)` reproduces a game; tests check the hash matches.                                                                                 |
+| Save format            | `engine/src/save.ts`              | JSON: format/version, metadata (mods, content hash, player tag), seed, snapshot, log. Loading with different content gives a warning, not a failure.                    |
+| Debug console          | `engine/src/console.ts`           | `tag`, `annex`, `owner`, `control`, `speed`, `help`.                                                                                                                    |
+| Simulation worker      | `client/src/sim/engine.worker.ts` | Owns the `GameSession`; advances `defines.game.speeds[speed-1]` game hours per real second, at most 240 ticks per 50 ms frame.                                          |
+| Worker handle          | `client/src/sim/sim-client.ts`    | Promise-based `execute`, `save`, `setSpeed`; `onUpdate` receives the tick and changed province arrays.                                                                  |
+| Save storage           | `client/src/sim/saves.ts`         | IndexedDB (gzip), export/import `.warroom` files.                                                                                                                       |
+
+### Speeds
+
+`defines.game.speeds` lists game hours per real second for speeds 1–5 (default
+`[2, 6, 24, 72, 240]`). Speed 0 is paused. Space toggles pause in the UI.

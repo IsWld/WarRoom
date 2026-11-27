@@ -6,7 +6,9 @@ import { NO_COUNTRY, type GameState } from './state.ts';
  */
 export type Command =
   | { type: 'SetController'; province: number; country: string }
-  | { type: 'SetOwner'; province: number; country: string };
+  | { type: 'SetOwner'; province: number; country: string }
+  /** Debug: `country` takes over everything `target` owns and controls. */
+  | { type: 'Annex'; country: string; target: string };
 
 export type CommandType = Command['type'];
 
@@ -25,6 +27,14 @@ export function validateCommand(state: GameState, command: Command): string | nu
       }
       return null;
     }
+    case 'Annex': {
+      const a = state.countryTags.indexOf(command.country);
+      const b = state.countryTags.indexOf(command.target);
+      if (a <= NO_COUNTRY) return `Unknown country "${command.country}"`;
+      if (b <= NO_COUNTRY) return `Unknown country "${command.target}"`;
+      if (a === b) return 'A country cannot annex itself';
+      return null;
+    }
     default:
       return `Unknown command type "${(command as { type: unknown }).type}"`;
   }
@@ -41,6 +51,16 @@ export function applyCommand(state: GameState, command: Command): void {
       const index = state.countryTags.indexOf(command.country);
       state.provinces.owner[command.province] = index;
       state.provinces.controller[command.province] = index;
+      return;
+    }
+    case 'Annex': {
+      const a = state.countryTags.indexOf(command.country);
+      const b = state.countryTags.indexOf(command.target);
+      const { owner, controller, count } = state.provinces;
+      for (let i = 0; i < count; i++) {
+        if (owner[i] === b) owner[i] = a;
+        if (controller[i] === b) controller[i] = a;
+      }
       return;
     }
   }

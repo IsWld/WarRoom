@@ -6,3 +6,6 @@ defines:
     start_date: '1936-01-01'
     # Seed used when the player does not pick one.
     default_seed: 1936
+    # Game hours simulated per real second at speeds 1 to 5 (speed 5 runs as fast as the
+    # machine allows up to this cap).
+    speeds: [2, 6, 24, 72, 240]

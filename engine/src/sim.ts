@@ -36,17 +36,26 @@ export function step(
   commands: readonly Command[] = [],
   systems: readonly System[] = SYSTEMS,
 ): StepResult {
+  const rejected = applyCommands(state, commands);
+  for (const system of systems) {
+    if (state.tick % system.everyHours === 0) system.run(state);
+  }
+  state.tick += 1;
+  return { rejected };
+}
+
+/**
+ * Validates and applies commands at the current tick without advancing time. Equivalent to
+ * passing them to the next step(): step() applies its commands before running systems.
+ */
+export function applyCommands(state: GameState, commands: readonly Command[]): RejectedCommand[] {
   const rejected: RejectedCommand[] = [];
   for (const command of commands) {
     const reason = validateCommand(state, command);
     if (reason === null) applyCommand(state, command);
     else rejected.push({ command, reason });
   }
-  for (const system of systems) {
-    if (state.tick % system.everyHours === 0) system.run(state);
-  }
-  state.tick += 1;
-  return { rejected };
+  return rejected;
 }
 
 /** Runs `days` whole game days with no commands. */

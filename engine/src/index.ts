@@ -6,3 +6,8 @@ export * from './commands.ts';
 export * from './sim.ts';
 export * from './hash.ts';
 export * from './snapshot.ts';
+export * from './replay.ts';
+export * from './save.ts';
+export * from './session.ts';
+export * from './scenario.ts';
+export * from './console.ts';
