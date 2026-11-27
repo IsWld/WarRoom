@@ -9,3 +9,13 @@ defines:
     # Game hours simulated per real second at speeds 1 to 5 (speed 5 runs as fast as the
     # machine allows up to this cap).
     speeds: [2, 6, 24, 72, 240]
+
+  # Land combat. See docs/design/land-warfare.md.
+  combat:
+    width: 80 # combat width per side in one battle
+    blocked_hit_chance: 0.1 # share of blocked attacks that hit
+    unblocked_hit_chance: 0.4 # share of unblocked attacks that hit
+    strength_damage_per_hit: 0.04
+    organization_damage_per_hit: 0.1
+    random_spread: 0.1 # damage varies ±10% per hour
+    organization_recovery: 0.4 # per hour when idle

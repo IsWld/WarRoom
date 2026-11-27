@@ -16,6 +16,14 @@ export function hashState(state: GameState): string {
   h.int(state.provinces.count);
   h.array(state.provinces.owner);
   h.array(state.provinces.controller);
+  const d = state.divisions;
+  h.int(d.count);
+  h.int(d.nextId);
+  for (const a of [d.id, d.owner, d.template, d.location, d.strength, d.organization, d.progress]) {
+    h.array(a.subarray(0, d.count));
+  }
+  for (let i = 0; i < d.count; i++) h.array(d.paths[i]!);
+  h.array(state.wars);
   return h.hex();
 }
 

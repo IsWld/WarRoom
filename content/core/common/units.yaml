@@ -1,0 +1,92 @@
+# Battalion types and division templates. Stats are per battalion; division stats are
+# derived from them (see docs/design/land-warfare.md). Numbers are first-pass balance values.
+battalions:
+  - id: infantry
+    name: Infantry
+    soft_attack: 6
+    hard_attack: 1
+    defense: 22
+    breakthrough: 3
+    organization: 60
+    hp: 25
+    speed: 4
+    width: 2
+    hardness: 0
+    manpower: 1000
+  - id: cavalry
+    name: Cavalry
+    soft_attack: 5
+    hard_attack: 1
+    defense: 18
+    breakthrough: 4
+    organization: 70
+    hp: 25
+    speed: 6
+    width: 2
+    hardness: 0
+    manpower: 1000
+  - id: mountaineers
+    name: Mountaineers
+    soft_attack: 7
+    hard_attack: 1
+    defense: 24
+    breakthrough: 4
+    organization: 70
+    hp: 20
+    speed: 4
+    width: 2
+    hardness: 0
+    manpower: 1000
+  - id: motorized
+    name: Motorized Infantry
+    soft_attack: 7
+    hard_attack: 1
+    defense: 22
+    breakthrough: 4
+    organization: 60
+    hp: 25
+    speed: 12
+    width: 2
+    hardness: 0.1
+    manpower: 1000
+  - id: artillery
+    name: Artillery
+    soft_attack: 25
+    hard_attack: 2
+    defense: 10
+    breakthrough: 6
+    organization: 0
+    hp: 6
+    speed: 4
+    width: 3
+    hardness: 0
+    manpower: 500
+  - id: light_armor
+    name: Light Tanks
+    soft_attack: 12
+    hard_attack: 6
+    defense: 4
+    breakthrough: 24
+    organization: 10
+    hp: 2
+    speed: 12
+    width: 2
+    hardness: 0.7
+    manpower: 500
+
+templates:
+  - id: infantry_division
+    name: Infantry Division
+    battalions: { infantry: 9, artillery: 1 }
+  - id: cavalry_division
+    name: Cavalry Division
+    battalions: { cavalry: 6 }
+  - id: mountain_division
+    name: Mountain Division
+    battalions: { mountaineers: 6, artillery: 1 }
+  - id: motorized_division
+    name: Motorized Division
+    battalions: { motorized: 6, artillery: 1 }
+  - id: panzer_division
+    name: Panzer Division
+    battalions: { light_armor: 4, motorized: 4, artillery: 1 }

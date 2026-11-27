@@ -11,3 +11,7 @@ export * from './save.ts';
 export * from './session.ts';
 export * from './scenario.ts';
 export * from './console.ts';
+export * from './world.ts';
+export * from './divisions.ts';
+export * from './pathfinding.ts';
+export * from './warfare.ts';

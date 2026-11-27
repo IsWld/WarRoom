@@ -57,7 +57,7 @@ function run(seed: number, ticks: number, saveAndReloadAt?: number): string {
 }
 
 // Recorded from the first run. Changes only when the rules deliberately change.
-const GOLDEN_HASH = '8f792a20';
+const GOLDEN_HASH = 'a363172a';
 
 test('the same seed and commands produce the same state', () => {
   assert.equal(run(1936, TICKS), run(1936, TICKS));

@@ -7,6 +7,7 @@ import type { CommandLog } from '../../../engine/src/replay.ts';
 import type { SaveMeta } from '../../../engine/src/save.ts';
 import type { RejectedCommand } from '../../../engine/src/sim.ts';
 import type { Snapshot } from '../../../engine/src/snapshot.ts';
+import type { World } from '../../../engine/src/world.ts';
 import type { FromWorker, ToWorker } from './protocol.ts';
 
 export interface SimUpdate {
@@ -45,12 +46,13 @@ export class SimClient {
     snapshot: Snapshot,
     seed: number,
     speeds: number[],
+    world: World,
     log?: CommandLog,
   ): Promise<{ tick: number; owner: Uint16Array; controller: Uint16Array }> {
     this.speed = 0;
     return new Promise((resolve) => {
       this.readyResolve = resolve;
-      this.send({ type: 'init', snapshot, seed, speeds, ...(log ? { log } : {}) });
+      this.send({ type: 'init', snapshot, seed, speeds, world, ...(log ? { log } : {}) });
     });
   }
 

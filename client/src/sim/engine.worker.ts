@@ -69,7 +69,10 @@ self.onmessage = (event: MessageEvent<ToWorker>) => {
   try {
     switch (message.type) {
       case 'init': {
-        session = new GameSession(fromSnapshot(message.snapshot), message.seed, message.log);
+        session = new GameSession(fromSnapshot(message.snapshot), message.seed, {
+          ...(message.log ? { log: message.log } : {}),
+          world: message.world,
+        });
         speeds = message.speeds;
         setSpeed(0);
         const arrays = provinceArrays(session);

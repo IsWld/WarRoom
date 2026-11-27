@@ -75,7 +75,47 @@ export const terrainSchema = z
     name: z.string().min(1),
     color: rgb,
     movement_cost: z.number().positive(),
+    /** Multiplies attackers' attacks into this terrain (1 = no effect). */
+    attack_modifier: z.number().positive().default(1),
     water: z.boolean(),
+  })
+  .strict();
+
+const nonNegative = z.number().nonnegative();
+
+/** A battalion type; divisions are built from these. See docs/design/land-warfare.md. */
+export const battalionSchema = z
+  .object({
+    id: slug,
+    name: z.string().min(1),
+    soft_attack: nonNegative,
+    hard_attack: nonNegative,
+    defense: nonNegative,
+    breakthrough: nonNegative,
+    organization: nonNegative,
+    hp: z.number().positive(),
+    speed: z.number().positive(),
+    width: z.number().positive(),
+    hardness: z.number().min(0).max(1),
+    manpower: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export const templateSchema = z
+  .object({
+    id: slug,
+    name: z.string().min(1),
+    battalions: z.record(slug, z.number().int().positive()),
+  })
+  .strict();
+
+export const setupDivisionSchema = z
+  .object({
+    owner: tag,
+    template: slug,
+    /** Province id from provinces.csv. */
+    province: z.number().int().positive(),
+    count: z.number().int().positive().default(1),
   })
   .strict();
 
@@ -94,6 +134,7 @@ export const setupSchema = z
     name: z.string().min(1),
     start_date: isoDay,
     states: z.record(slug, setupStateSchema),
+    divisions: z.array(setupDivisionSchema).default([]),
   })
   .strict();
 
@@ -111,6 +152,20 @@ export const mapDefinesSchema = z
   .strict()
   .refine((m) => m.lon_max > m.lon_min, 'lon_max must be greater than lon_min');
 
+const ratio = z.number().min(0).max(1);
+
+export const combatDefinesSchema = z
+  .object({
+    width: z.number().positive(),
+    blocked_hit_chance: ratio,
+    unblocked_hit_chance: ratio,
+    strength_damage_per_hit: nonNegative,
+    organization_damage_per_hit: nonNegative,
+    random_spread: ratio,
+    organization_recovery: nonNegative,
+  })
+  .strict();
+
 export const definesSchema = z
   .object({
     game: z
@@ -125,6 +180,7 @@ export const definesSchema = z
       .passthrough(),
     /** Map image and projection. Optional until a mod provides a map. */
     map: mapDefinesSchema.optional(),
+    combat: combatDefinesSchema.optional(),
   })
   .passthrough();
 
@@ -134,6 +190,8 @@ export type StateDef = z.infer<typeof stateSchema>;
 export type TerrainDef = z.infer<typeof terrainSchema>;
 export type SetupDef = z.output<typeof setupSchema>;
 export type MapDefines = z.infer<typeof mapDefinesSchema>;
+export type BattalionDef = z.infer<typeof battalionSchema>;
+export type TemplateDef = z.infer<typeof templateSchema>;
 export type Defines = z.infer<typeof definesSchema>;
 
 /** Wraps a Zod schema in the loader's dependency-free Validator interface. */
@@ -158,6 +216,8 @@ export const CORE_SCHEMAS: ContentSchemas = {
     states: zodValidator(stateSchema),
     terrain: zodValidator(terrainSchema),
     setups: zodValidator(setupSchema),
+    battalions: zodValidator(battalionSchema),
+    templates: zodValidator(templateSchema),
   },
   defines: zodValidator(definesSchema),
 };

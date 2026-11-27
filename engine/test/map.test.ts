@@ -25,8 +25,22 @@ test('parseCsv reports the line of a bad row', () => {
 });
 
 const terrain: TerrainDef[] = [
-  { id: 'plains', name: 'Plains', color: [1, 1, 1], movement_cost: 1, water: false },
-  { id: 'ocean', name: 'Ocean', color: [0, 0, 9], movement_cost: 1, water: true },
+  {
+    id: 'plains',
+    name: 'Plains',
+    color: [1, 1, 1],
+    movement_cost: 1,
+    attack_modifier: 1,
+    water: false,
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean',
+    color: [0, 0, 9],
+    movement_cost: 1,
+    attack_modifier: 1,
+    water: true,
+  },
 ];
 
 /**

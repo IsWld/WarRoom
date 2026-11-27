@@ -6,6 +6,7 @@
 import type { Command } from './commands.ts';
 import { step, SYSTEMS, type System } from './sim.ts';
 import type { GameState } from './state.ts';
+import { EMPTY_WORLD, type World } from './world.ts';
 
 export interface LogEntry {
   tick: number;
@@ -39,6 +40,7 @@ export function replay(
   log: CommandLog,
   untilTick: number,
   systems: readonly System[] = SYSTEMS,
+  world: World = EMPTY_WORLD,
 ): number {
   let rejected = 0;
   let i = 0;
@@ -47,7 +49,7 @@ export function replay(
     const entry = log.entries[i];
     const commands = entry && entry.tick === state.tick ? entry.commands : [];
     if (commands.length > 0) i++;
-    rejected += step(state, commands, systems).rejected.length;
+    rejected += step(state, commands, systems, world).rejected.length;
   }
   return rejected;
 }

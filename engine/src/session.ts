@@ -11,6 +11,7 @@ import { createLog, record, type CommandLog } from './replay.ts';
 import { createSave, type SaveFile, type SaveMeta } from './save.ts';
 import { applyCommands, step, SYSTEMS, type RejectedCommand, type System } from './sim.ts';
 import type { GameState } from './state.ts';
+import { EMPTY_WORLD, type World } from './world.ts';
 
 export interface CommandResult {
   rejected: RejectedCommand[];
@@ -28,24 +29,25 @@ export class GameSession {
   readonly state: GameState;
   readonly seed: number;
   readonly log: CommandLog;
+  readonly world: World;
   private readonly systems: readonly System[];
 
   constructor(
     state: GameState,
     seed: number,
-    log: CommandLog = createLog(),
-    systems: readonly System[] = SYSTEMS,
+    options: { log?: CommandLog; world?: World; systems?: readonly System[] } = {},
   ) {
     this.state = state;
     this.seed = seed;
-    this.log = log;
-    this.systems = systems;
+    this.log = options.log ?? createLog();
+    this.world = options.world ?? EMPTY_WORLD;
+    this.systems = options.systems ?? SYSTEMS;
   }
 
   /** Applies commands now (at the current tick) and records the accepted ones. */
   execute(commands: readonly Command[]): CommandResult {
     const before = this.provinceFingerprint();
-    const rejected = applyCommands(this.state, commands);
+    const rejected = applyCommands(this.state, commands, this.world);
     const accepted = commands.filter((c) => !rejected.some((r) => r.command === c));
     record(this.log, this.state.tick, accepted);
     return { rejected, provincesChanged: before !== this.provinceFingerprint() };
@@ -54,7 +56,7 @@ export class GameSession {
   /** Advances `ticks` game hours. */
   advance(ticks: number): AdvanceResult {
     const before = this.provinceFingerprint();
-    for (let i = 0; i < ticks; i++) step(this.state, [], this.systems);
+    for (let i = 0; i < ticks; i++) step(this.state, [], this.systems, this.world);
     return { tick: this.state.tick, provincesChanged: before !== this.provinceFingerprint() };
   }
 

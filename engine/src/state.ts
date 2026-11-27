@@ -1,6 +1,7 @@
+import { createDivisions, type DivisionArrays } from './divisions.ts';
 import { createRng, type RngState } from './rng.ts';
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 /** Country index 0 is reserved for "nobody" (unowned land, open sea). */
 export const NO_COUNTRY = 0;
@@ -25,6 +26,9 @@ export interface GameState {
   /** Country index → tag. Index 0 is NO_COUNTRY_TAG. */
   countryTags: string[];
   provinces: ProvinceArrays;
+  divisions: DivisionArrays;
+  /** Symmetric country × country matrix: 1 = at war. Index [a * countryCount + b]. */
+  wars: Uint8Array;
 }
 
 export interface CreateStateOptions {
@@ -62,6 +66,8 @@ export function createState(options: CreateStateOptions): GameState {
     rng: createRng(options.seed),
     countryTags,
     provinces: { count, owner, controller: new Uint16Array(owner) },
+    divisions: createDivisions(),
+    wars: new Uint8Array(countryTags.length * countryTags.length),
   };
 }
 
@@ -70,4 +76,23 @@ export function countryIndex(state: Pick<GameState, 'countryTags'>, tag: string)
   const index = state.countryTags.indexOf(tag);
   if (index < 0) throw new Error(`Unknown country tag "${tag}"`);
   return index;
+}
+
+export function atWar(
+  state: Pick<GameState, 'wars' | 'countryTags'>,
+  a: number,
+  b: number,
+): boolean {
+  return state.wars[a * state.countryTags.length + b] === 1;
+}
+
+export function setWar(
+  state: Pick<GameState, 'wars' | 'countryTags'>,
+  a: number,
+  b: number,
+  war: boolean,
+): void {
+  const n = state.countryTags.length;
+  state.wars[a * n + b] = war ? 1 : 0;
+  state.wars[b * n + a] = war ? 1 : 0;
 }

@@ -7,9 +7,18 @@ import type { CommandLog } from '../../../engine/src/replay.ts';
 import type { SaveMeta } from '../../../engine/src/save.ts';
 import type { RejectedCommand } from '../../../engine/src/sim.ts';
 import type { Snapshot } from '../../../engine/src/snapshot.ts';
+import type { World } from '../../../engine/src/world.ts';
 
 export type ToWorker =
-  | { type: 'init'; snapshot: Snapshot; seed: number; log?: CommandLog; speeds: number[] }
+  | {
+      type: 'init';
+      snapshot: Snapshot;
+      seed: number;
+      log?: CommandLog;
+      speeds: number[];
+      /** Static game data (structured-cloned once). */
+      world: World;
+    }
   | { type: 'execute'; id: number; commands: Command[] }
   | { type: 'speed'; speed: number }
   | { type: 'save'; id: number; meta: SaveMeta };
