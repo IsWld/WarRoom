@@ -8,7 +8,9 @@ import { replay } from '../src/replay.ts';
 import { GameSession } from '../src/session.ts';
 import { fromSnapshot, toSnapshot } from '../src/snapshot.ts';
 import { atWar, createState } from '../src/state.ts';
+import { WARFARE_SYSTEMS } from '../src/warfare.ts';
 import { DEFAULT_COMBAT, divisionStats, type World } from '../src/world.ts';
+import { SYSTEMS } from '../src/sim.ts';
 
 const BATTALIONS = new Map(
   Object.entries({
@@ -102,7 +104,8 @@ function makeWorld(): World {
 }
 
 // Countries: 1 RED (owns 0–2), 2 BLU (owns 3–5), 3 GRY (neutral, owns 7).
-function newSession(world = makeWorld()) {
+/** Warfare tests run without the AI unless asked, so outcomes depend only on the rules. */
+function newSession(world = makeWorld(), withAi = false) {
   const state = createState({
     seed: 9,
     startDay: 0,
@@ -110,7 +113,7 @@ function newSession(world = makeWorld()) {
     provinceCount: 8,
     owners: ['RED', 'RED', 'RED', 'BLU', 'BLU', 'BLU', undefined, 'GRY'],
   });
-  return new GameSession(state, 9, { world });
+  return new GameSession(state, 9, { world, systems: withAi ? SYSTEMS : WARFARE_SYSTEMS });
 }
 
 function spawn(
@@ -274,7 +277,11 @@ test('warfare is deterministic, survives save/load, and replays exactly', () => 
     for (let h = 0; h < 24 * 15; h++) {
       if (h === reloadAt) {
         const state = fromSnapshot(JSON.parse(JSON.stringify(toSnapshot(s.state))));
-        s = new GameSession(state, s.seed, { log: s.log, world: s.world });
+        s = new GameSession(state, s.seed, {
+          log: s.log,
+          world: s.world,
+          systems: WARFARE_SYSTEMS,
+        });
       }
       s.advance(1);
     }
@@ -285,7 +292,44 @@ test('warfare is deterministic, survives save/load, and replays exactly', () => 
   assert.equal(hashState(a.state), hashState(run(100).state));
   // Replay from scratch.
   const fresh = newSession();
-  const rejected = replay(fresh.state, a.log, a.state.tick, undefined, fresh.world);
+  const rejected = replay(fresh.state, a.log, a.state.tick, WARFARE_SYSTEMS, fresh.world);
   assert.equal(rejected, 0);
+  assert.equal(hashState(fresh.state), hashState(a.state));
+});
+
+test('the AI pushes into undefended enemy land and defends its front', () => {
+  const s = newSession(makeWorld(), true);
+  spawn(s, 'RED', 0);
+  spawn(s, 'RED', 1);
+  spawn(s, 'RED', 2);
+  s.execute([{ type: 'DeclareWar', country: 'RED', target: 'BLU' }]);
+  s.advance(24 * 6);
+  // BLU has no army: RED's AI walks in and occupies BLU land.
+  const occupied = [3, 4, 5].filter((p) => s.state.provinces.controller[p] === 1).length;
+  assert.ok(occupied >= 2, `occupied ${occupied}`);
+});
+
+test('a human-controlled country is left alone by the AI', () => {
+  const s = newSession(makeWorld(), true);
+  spawn(s, 'RED', 2);
+  s.execute([{ type: 'SetHuman', country: 'RED', human: true }]);
+  s.execute([{ type: 'DeclareWar', country: 'RED', target: 'BLU' }]);
+  s.advance(24 * 6);
+  assert.equal(s.state.divisions.location[0], 2, 'no orders were issued for the human');
+});
+
+test('AI games replay exactly', () => {
+  const run = () => {
+    const s = newSession(makeWorld(), true);
+    for (const p of [0, 1, 2]) spawn(s, 'RED', p);
+    for (const p of [4, 5]) spawn(s, 'BLU', p);
+    s.execute([{ type: 'DeclareWar', country: 'RED', target: 'BLU' }]);
+    s.advance(24 * 20);
+    return s;
+  };
+  const a = run();
+  assert.equal(hashState(a.state), hashState(run().state));
+  const fresh = newSession(makeWorld(), true);
+  replay(fresh.state, a.log, a.state.tick, SYSTEMS, fresh.world);
   assert.equal(hashState(fresh.state), hashState(a.state));
 });

@@ -19,7 +19,9 @@ export type Command =
   | { type: 'MoveDivision'; division: number; target: number }
   | { type: 'StopDivision'; division: number }
   /** Debug / scenario setup: creates a full-strength division. */
-  | { type: 'SpawnDivision'; country: string; template: string; province: number };
+  | { type: 'SpawnDivision'; country: string; template: string; province: number }
+  /** Marks a country as human-controlled (true) or AI-controlled (false). */
+  | { type: 'SetHuman'; country: string; human: boolean };
 
 export type CommandType = Command['type'];
 
@@ -70,6 +72,8 @@ export function validateCommand(state: GameState, command: Command, world: World
         return 'Not a land province';
       return null;
     }
+    case 'SetHuman':
+      return country(command.country) <= NO_COUNTRY ? `Unknown country "${command.country}"` : null;
     default:
       return `Unknown command type "${(command as { type: unknown }).type}"`;
   }
@@ -144,6 +148,9 @@ export function applyCommand(state: GameState, command: Command, world: World): 
       });
       return;
     }
+    case 'SetHuman':
+      state.humans[country(command.country)] = command.human ? 1 : 0;
+      return;
   }
 }
 

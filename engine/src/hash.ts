@@ -24,6 +24,7 @@ export function hashState(state: GameState): string {
   }
   for (let i = 0; i < d.count; i++) h.array(d.paths[i]!);
   h.array(state.wars);
+  h.array(state.humans);
   return h.hex();
 }
 

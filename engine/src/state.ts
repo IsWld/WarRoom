@@ -1,7 +1,7 @@
 import { createDivisions, type DivisionArrays } from './divisions.ts';
 import { createRng, type RngState } from './rng.ts';
 
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
 /** Country index 0 is reserved for "nobody" (unowned land, open sea). */
 export const NO_COUNTRY = 0;
@@ -29,6 +29,8 @@ export interface GameState {
   divisions: DivisionArrays;
   /** Symmetric country × country matrix: 1 = at war. Index [a * countryCount + b]. */
   wars: Uint8Array;
+  /** 1 for countries controlled by a human player; everyone else is run by the AI. */
+  humans: Uint8Array;
 }
 
 export interface CreateStateOptions {
@@ -68,6 +70,7 @@ export function createState(options: CreateStateOptions): GameState {
     provinces: { count, owner, controller: new Uint16Array(owner) },
     divisions: createDivisions(),
     wars: new Uint8Array(countryTags.length * countryTags.length),
+    humans: new Uint8Array(countryTags.length),
   };
 }
 

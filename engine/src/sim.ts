@@ -1,6 +1,7 @@
 import { HOURS_PER_DAY } from './calendar.ts';
 import { applyCommand, validateCommand, type Command } from './commands.ts';
 import type { GameState } from './state.ts';
+import { AI_SYSTEMS } from './ai.ts';
 import { WARFARE_SYSTEMS } from './warfare.ts';
 import { EMPTY_WORLD, type World } from './world.ts';
 
@@ -22,7 +23,7 @@ export interface StepResult {
 }
 
 /** Systems run in this order every tick they are due. Order matters for determinism. */
-export const SYSTEMS: readonly System[] = [...WARFARE_SYSTEMS];
+export const SYSTEMS: readonly System[] = [...AI_SYSTEMS, ...WARFARE_SYSTEMS];
 
 /**
  * Advances the simulation by one tick (one game hour):

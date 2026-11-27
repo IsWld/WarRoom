@@ -25,6 +25,8 @@ export interface Snapshot {
   };
   /** Pairs [a, b] with a < b that are at war. */
   wars: [number, number][];
+  /** Country indices controlled by humans. */
+  humans: number[];
 }
 
 export function toSnapshot(state: GameState): Snapshot {
@@ -61,6 +63,7 @@ export function toSnapshot(state: GameState): Snapshot {
         for (let b = a + 1; b < n; b++) if (state.wars[a * n + b]) pairs.push([a, b]);
       return pairs;
     })(),
+    humans: Array.from(state.humans.keys()).filter((i) => state.humans[i] === 1),
   };
 }
 
@@ -118,6 +121,11 @@ export function fromSnapshot(snapshot: Snapshot): GameState {
     },
     divisions,
     wars,
+    humans: (() => {
+      const humans = new Uint8Array(n);
+      for (const i of snapshot.humans) humans[i] = 1;
+      return humans;
+    })(),
   };
 }
 
