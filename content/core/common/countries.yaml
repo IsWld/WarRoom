@@ -1,31 +1,44 @@
-# Countries known to the game. Starting positions per scenario live under history/.
-# Placeholder set for Phase 0: the seven major powers of 1936. Colors are original choices.
+# Countries known to the game. Starting positions per scenario live in history/.
+# Colors are original choices for this game. Tags are three capital letters.
 countries:
-  - id: GER
-    name: Germany
-    adjective: German
-    color: [92, 98, 104]
-  - id: ENG
-    name: United Kingdom
-    adjective: British
-    color: [196, 56, 64]
-  - id: FRA
-    name: France
-    adjective: French
-    color: [58, 92, 178]
-  - id: SOV
-    name: Soviet Union
-    adjective: Soviet
-    color: [150, 28, 30]
-  - id: USA
-    name: United States
-    adjective: American
-    color: [40, 132, 168]
-  - id: ITA
-    name: Italy
-    adjective: Italian
-    color: [74, 148, 82]
-  - id: JAP
-    name: Japan
-    adjective: Japanese
-    color: [226, 214, 172]
+  # Great powers
+  - { id: GER, name: Germany, adjective: German, color: [92, 98, 104] }
+  - { id: ENG, name: United Kingdom, adjective: British, color: [196, 56, 64] }
+  - { id: FRA, name: France, adjective: French, color: [58, 92, 178] }
+  - { id: SOV, name: Soviet Union, adjective: Soviet, color: [150, 28, 30] }
+  - { id: USA, name: United States, adjective: American, color: [40, 132, 168] }
+  - { id: ITA, name: Italy, adjective: Italian, color: [74, 148, 82] }
+  - { id: JAP, name: Japan, adjective: Japanese, color: [226, 214, 172] }
+
+  # Europe
+  - { id: POL, name: Poland, adjective: Polish, color: [204, 120, 132] }
+  - { id: CZE, name: Czechoslovakia, adjective: Czechoslovak, color: [84, 168, 186] }
+  - { id: AUS, name: Austria, adjective: Austrian, color: [232, 232, 226] }
+  - { id: HUN, name: Hungary, adjective: Hungarian, color: [214, 150, 74] }
+  - { id: ROM, name: Romania, adjective: Romanian, color: [212, 196, 60] }
+  - { id: YUG, name: Yugoslavia, adjective: Yugoslav, color: [104, 112, 180] }
+  - { id: BUL, name: Bulgaria, adjective: Bulgarian, color: [96, 150, 104] }
+  - { id: GRE, name: Greece, adjective: Greek, color: [120, 176, 222] }
+  - { id: ALB, name: Albania, adjective: Albanian, color: [150, 86, 70] }
+  - { id: TUR, name: Turkey, adjective: Turkish, color: [180, 200, 150] }
+  - { id: SPR, name: Spain, adjective: Spanish, color: [218, 180, 70] }
+  - { id: POR, name: Portugal, adjective: Portuguese, color: [70, 130, 90] }
+  - { id: IRE, name: Ireland, adjective: Irish, color: [98, 196, 120] }
+  - { id: BEL, name: Belgium, adjective: Belgian, color: [196, 176, 110] }
+  - { id: HOL, name: Netherlands, adjective: Dutch, color: [230, 140, 60] }
+  - { id: LUX, name: Luxembourg, adjective: Luxembourgish, color: [140, 180, 200] }
+  - { id: SWI, name: Switzerland, adjective: Swiss, color: [200, 80, 90] }
+  - { id: DEN, name: Denmark, adjective: Danish, color: [170, 70, 80] }
+  - { id: NOR, name: Norway, adjective: Norwegian, color: [140, 90, 110] }
+  - { id: SWE, name: Sweden, adjective: Swedish, color: [70, 110, 180] }
+  - { id: FIN, name: Finland, adjective: Finnish, color: [220, 226, 240] }
+  - { id: EST, name: Estonia, adjective: Estonian, color: [70, 110, 140] }
+  - { id: LAT, name: Latvia, adjective: Latvian, color: [140, 60, 80] }
+  - { id: LIT, name: Lithuania, adjective: Lithuanian, color: [180, 170, 60] }
+  - { id: DNZ, name: Danzig, adjective: Danzig, color: [200, 150, 150] }
+
+  # Middle East and North Africa inside the 1936 Europe map
+  - { id: EGY, name: Egypt, adjective: Egyptian, color: [200, 186, 120] }
+  - { id: IRQ, name: Iraq, adjective: Iraqi, color: [150, 160, 110] }
+  - { id: PER, name: Persia, adjective: Persian, color: [120, 160, 140] }
+  - { id: SAU, name: Saudi Arabia, adjective: Saudi, color: [130, 170, 100] }

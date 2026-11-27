@@ -6,11 +6,8 @@
  * Exits with code 1 if any error is found.
  */
 import { pathToFileURL } from 'node:url';
-import { loadMods } from '../engine/src/content/loader.ts';
-import { CORE_SCHEMAS } from '../engine/src/content/schemas.ts';
 import type { ContentError } from '../engine/src/content/types.ts';
-import { parseYaml } from '../engine/src/content/yaml.ts';
-import { readModFolder } from './mod-folder.ts';
+import { loadContentFromFolders } from './load-content.ts';
 
 export function formatError(e: ContentError): string {
   const where = [e.mod, e.file && (e.line ? `${e.file}:${e.line}` : e.file), e.record]
@@ -24,18 +21,29 @@ function main(args: string[]): number {
     console.error('Usage: node tools/validate-content.ts <mod-folder> [more mod folders...]');
     return 2;
   }
-  const result = loadMods(args.map(readModFolder), parseYaml, CORE_SCHEMAS);
+  const { content: result, map, errors, warnings } = loadContentFromFolders(args);
   const counts = Object.entries(result.collections)
     .map(([name, records]) => `${records.length} ${name}`)
     .join(', ');
   console.log(`Loaded ${result.mods.map((m) => `${m.id}@${m.version}`).join(', ') || 'no mods'}`);
   console.log(`Records: ${counts || 'none'}`);
-  if (result.errors.length === 0) {
+  if (map) {
+    console.log(
+      `Map: ${map.width}×${map.height}, ${map.provinceCount} provinces, ${map.adjList.length / 2} borders`,
+    );
+  }
+  if (warnings.length > 0) {
+    console.log(`${warnings.length} warning(s):`);
+    for (const w of warnings.slice(0, 30)) console.log(`  ! ${w}`);
+    if (warnings.length > 30) console.log(`  ...and ${warnings.length - 30} more`);
+  }
+  if (errors.length === 0) {
     console.log('✓ No content errors');
     return 0;
   }
-  console.error(`\n${result.errors.length} content error(s):`);
-  for (const error of result.errors) console.error(formatError(error));
+  console.error(`\n${errors.length} content error(s):`);
+  for (const error of errors.slice(0, 200)) console.error(formatError(error));
+  if (errors.length > 200) console.error(`  ...and ${errors.length - 200} more`);
   return 1;
 }
 

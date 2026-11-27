@@ -1,3 +1,4 @@
+import { parseCsv } from './csv.ts';
 import { parseManifest, resolveLoadOrder } from './manifest.ts';
 import {
   APPEND_KEY,
@@ -17,7 +18,8 @@ import type {
   TextParser,
 } from './types.ts';
 
-const CONTENT_FILE = /\.(ya?ml|json)$/i;
+const CONTENT_FILE = /\.(ya?ml|json|csv)$/i;
+const CSV_FILE = /\.csv$/i;
 const DEFINES_KEY = 'defines';
 
 interface Provenance {
@@ -77,7 +79,9 @@ export function loadMods(
       const at = { mod: manifest.id, file: file.path };
       let parsed: unknown;
       try {
-        parsed = parse(file.text);
+        parsed = CSV_FILE.test(file.path)
+          ? { [csvCollection(file.path)]: parseCsv(file.text) }
+          : parse(file.text);
       } catch (error) {
         const line = (error as { line?: unknown }).line;
         errors.push({
@@ -260,6 +264,12 @@ function applyEntry(
   // Full definition: add or replace. Map.set keeps a replaced record in its original position.
   records.set(id, entry as ContentRecord);
   provenance.set(k, at);
+}
+
+/** A CSV file becomes the collection named by its file stem: map/provinces.csv → provinces. */
+function csvCollection(path: string): string {
+  const name = path.split('/').at(-1) ?? path;
+  return name.replace(CSV_FILE, '');
 }
 
 function key(collection: string, id: string): string {

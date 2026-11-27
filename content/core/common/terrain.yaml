@@ -1,0 +1,53 @@
+# Terrain types. Movement and combat effects are added as those systems arrive.
+# movement_cost multiplies the time to cross a province (1.0 = plains).
+terrain:
+  - id: plains
+    name: Plains
+    color: [176, 186, 120]
+    movement_cost: 1.0
+    water: false
+  - id: forest
+    name: Forest
+    color: [74, 120, 70]
+    movement_cost: 1.5
+    water: false
+  - id: hills
+    name: Hills
+    color: [160, 138, 96]
+    movement_cost: 1.5
+    water: false
+  - id: mountains
+    name: Mountains
+    color: [128, 112, 104]
+    movement_cost: 2.0
+    water: false
+  - id: marsh
+    name: Marsh
+    color: [104, 132, 112]
+    movement_cost: 2.0
+    water: false
+  - id: desert
+    name: Desert
+    color: [222, 200, 140]
+    movement_cost: 1.2
+    water: false
+  - id: urban
+    name: Urban
+    color: [150, 150, 150]
+    movement_cost: 1.2
+    water: false
+  - id: jungle
+    name: Jungle
+    color: [40, 96, 50]
+    movement_cost: 2.0
+    water: false
+  - id: ocean
+    name: Ocean
+    color: [52, 84, 120]
+    movement_cost: 1.0
+    water: true
+  - id: lake
+    name: Lake
+    color: [70, 110, 150]
+    movement_cost: 1.0
+    water: true
