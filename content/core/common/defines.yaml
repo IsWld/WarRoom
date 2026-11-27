@@ -1,0 +1,8 @@
+# Balance constants. Every tunable number in the game belongs in this file (or a mod's
+# override of it), never in engine code. Phase 0 only needs the clock settings.
+defines:
+  game:
+    # Tick 0 of the default scenario. One tick is one game hour.
+    start_date: '1936-01-01'
+    # Seed used when the player does not pick one.
+    default_seed: 1936

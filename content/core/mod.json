@@ -1,0 +1,7 @@
+{
+  "id": "core",
+  "name": "WarRoom Core",
+  "version": "0.0.1",
+  "dependencies": [],
+  "loadAfter": []
+}
